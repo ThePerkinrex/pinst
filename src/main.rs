@@ -8,6 +8,7 @@ const PINST_BRANCH :&str = "alpha"/*alpha, nightly or stable*/;
  */
 
 use std::env;
+mod toml;
 
 fn main() {
     println!("Pinst {}-{}", PINST_VERSION, PINST_BRANCH);
@@ -31,10 +32,30 @@ fn main() {
 
 fn help(args: Vec<String>){
     println!("HELP PAGE");
-    println!("{:?}", args);
+    if args.len() > 0 {
+        println!("{:?}", args);
+    }
 }
 
 fn port(args: Vec<String>){
     println!("PORT PAGE");
-    println!("{:?}", args);
+    if args.clone().len() > 0 {
+        println!("{:?}", args.clone());
+        let command:String = String::from(args.clone()[0].as_ref());
+        match command.as_ref(){
+            "list" => parse_test(),
+            _ => println!("Not a valid command"),
+        }
+    }
+}
+
+fn parse_test() {
+    /*
+    hi = 7
+    arr = [10,1,10]
+    [obj]
+    hello = "h"
+    */
+
+    println!("{}", toml::parse("hi = 7\narr = [10,90.9879,10]\n[obj]\nhello = \"h\"\n\n[obj inside obj]\nhello = \"h\""/*"[obj]\nhello = \"h\"\n\nhi=7\narr=[10,01,10]"*/.to_string()).to_string());
 }

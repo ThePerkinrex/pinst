@@ -3,6 +3,7 @@
 use std::ptr;
 use std::str::FromStr;
 
+use io;
 
 #[derive(Debug, Clone)]
 pub struct TOMLValue {
@@ -65,6 +66,7 @@ pub struct TOML {
     null: bool
 }
 
+#[allow(dead_code)]
 impl TOML {
     pub fn get_property(self, name: String) -> Option<TOMLValue>{
         for property in self.properties {
@@ -156,13 +158,18 @@ fn parse_value(tok: String) -> TOMLValue {
                 value_type = 3;
             }
         }else if value_type == 1 {
-            if chr == '"' && pchr == &mut '\\'{
-                let mut utf8str: Vec<u8> = Vec::new();
-                utf8str.push(chr as u8);
-                cur_tok += &String::from_utf8(utf8str).unwrap();
-            }else if chr == '"' {
-                toml_value = TOMLValue::get_string(cur_tok.clone());
-                cur_tok = String::new();
+            if chr == '"' {
+                unsafe{
+                    if *pchr == '\\' {
+                        let mut utf8str: Vec<u8> = Vec::new();
+                        utf8str.push(chr as u8);
+                        cur_tok += &String::from_utf8(utf8str).unwrap();
+                    }else{
+                        toml_value = TOMLValue::get_string(cur_tok.clone());
+                        cur_tok = String::new();
+                    }
+                }
+
             }else{
                 let mut utf8str: Vec<u8> = Vec::new();
                 utf8str.push(chr as u8);
@@ -182,7 +189,9 @@ fn parse_value(tok: String) -> TOMLValue {
                 cur_arr.push(parse_value(cur_tok.clone()));
                 cur_tok = String::new();
             } else if chr == ']' {
-                cur_arr.push(parse_value(cur_tok.clone()));
+                if cur_tok != "" {
+                    cur_arr.push(parse_value(cur_tok.clone()));
+                }
                 cur_tok = String::new();
                 toml_value = TOMLValue::get_array(cur_arr.clone());
             } else {
@@ -200,7 +209,7 @@ fn parse_value(tok: String) -> TOMLValue {
         toml_value = TOMLValue::get_number(n);
     }
     if toml_value.empty {
-        panic!("TOML parsing error, value expected, nothing found\nstring that created the panic: {}\n", tok);
+        panic!("TOML parsing error, value expected, nothing found\nstring that created the panic: {:?}\n", tok);
     }
     return toml_value;
 }
@@ -315,4 +324,7 @@ pub fn parse(toml: String) -> TOML{
     }
 
     return cur_toml;
+}
+pub fn parse_file(filename: String) -> TOML{
+    return parse(io::read(filename));
 }

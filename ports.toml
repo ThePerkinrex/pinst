@@ -1,4 +1,4 @@
 github = ["theperkinrex/pinst_port"]
 gitlab = []
 other  = []
-files  = ["~/Desktop/Rust\ Projects/pinst/ports/test.toml"]
+files  = ["ports/test.toml"]

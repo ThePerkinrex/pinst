@@ -1,3 +1,3 @@
 [rust]
-content  = ""
-makefile = ""
+content  = []
+makefile = "ports/rust.makefile"

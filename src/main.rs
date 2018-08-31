@@ -2,12 +2,14 @@ const PINST_VERSION:&str = "0.1.0"/*big.small.patch*/;
 const PINST_BRANCH :&str = "alpha"/*alpha, nightly or stable*/;
 
 /*
- Pinst uses a sistem that is simply separated in ports & containers.
- In ports there are a list of containers saying their name, where to find them & where to find the makefile to install them.
- Containers are just things to install, like formulae in homebrew.
+ Pinst uses a sistem that is simply separated in ports & ships.
+ In ports there are a list of ships saying their name, where to find them & where to find the makefile to install them.
+ Ships are just things to install, like formulae in homebrew.
  */
 
 use std::env;
+
+mod io;
 mod toml;
 
 fn main() {
@@ -28,6 +30,7 @@ fn main() {
         println!("USAGE: pinst command [options]\n\n");
         println!("To see the list of available commands use 'pinst help'");
     }
+    io::overwrite("test.txt".to_string(), "".to_string())
 }
 
 fn help(args: Vec<String>){
@@ -50,12 +53,5 @@ fn port(args: Vec<String>){
 }
 
 fn parse_test() {
-    /*
-    hi = 7
-    arr = [10,1,10]
-    [obj]
-    hello = "h"
-    */
-
-    println!("{}", toml::parse("hi = 7\narr = [10,90.9879,10]\n[obj]\nhello = \"h\"\n\n[obj inside obj]\nhello = \"h\""/*"[obj]\nhello = \"h\"\n\nhi=7\narr=[10,01,10]"*/.to_string()).to_string());
+    println!("{}", toml::parse_file("ports.toml".to_string()).to_string());
 }

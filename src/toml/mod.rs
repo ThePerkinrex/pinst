@@ -236,7 +236,7 @@ pub fn parse(toml: String) -> TOML{
     3 -> Properties
     */
     for line in toml_str.split("\n") {
-        print!("({}) <{}> ", parse_stage, line);
+        //print!("({}) <{}> ", parse_stage, line);
         let mut line_string:String = String::from(line);
         let line_chars:&[u8] = line_string.as_bytes();
         let mut cur_tok:String = String::new();
@@ -310,7 +310,7 @@ pub fn parse(toml: String) -> TOML{
             cur_toml.properties.push((cur_p_name, parse_value(cur_tok)));
             parse_stage = 0;
         }
-        println!("({})", parse_stage);
+        //println!("({})", parse_stage);
     }
     if parse_stage == 2 {
 

@@ -7,11 +7,12 @@ use io;
 
 #[derive(Debug, Clone)]
 pub struct TOMLValue {
-    array: Option<Vec<TOMLValue>>,
-    string: Option<String>,
-    number: Option<f64>,
-    empty: bool
+    pub array: Option<Vec<TOMLValue>>,
+    pub string: Option<String>,
+    pub number: Option<f64>,
+    pub empty: bool
 }
+#[allow(dead_code)]
 impl TOMLValue {
     pub fn to_string(self) -> String {
         let mut r:String = String::new();
@@ -40,27 +41,38 @@ impl TOMLValue {
         return r;
     }
 
+    pub fn get_string(self) -> Option<String> {
+        return self.string.clone();
+    }
+
+    pub fn get_number(self) -> Option<f64> {
+        return self.number.clone();
+    }
+
+    pub fn get_array(self) -> Option<Vec<TOMLValue>> {
+        return self.array.clone();
+    }
 
     pub fn new() -> TOMLValue{
         return TOMLValue {array: Option::None, string: Option::None, number: Option::None, empty: true};
     }
 
-    pub fn get_array(array: Vec<TOMLValue>) -> TOMLValue{
+    pub fn get_new_array(array: Vec<TOMLValue>) -> TOMLValue{
         return TOMLValue {array: Option::Some(array), string: Option::None, number: Option::None, empty: false};
     }
 
-    pub fn get_string(string: String) -> TOMLValue{
+    pub fn get_new_string(string: String) -> TOMLValue{
         return TOMLValue {array: Option::None, string: Option::Some(string), number: Option::None, empty: false};
     }
 
-    pub fn get_number(number: f64) -> TOMLValue{
+    pub fn get_new_number(number: f64) -> TOMLValue{
         return TOMLValue {array: Option::None, string: Option::None, number: Option::Some(number), empty: false};
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct TOML {
-    name: String,
+    pub name: String,
     objects: Vec<TOML>,
     properties: Vec<(String, TOMLValue)>,
     null: bool
@@ -77,6 +89,10 @@ impl TOML {
         return Option::None;
     }
 
+    pub fn get_properties(self) -> Vec<(String, TOMLValue)> {
+        return self.properties.clone();
+    }
+
     pub fn get_object(self, name: String) -> Option<TOML>{
         for object in self.objects {
             if object.name == name && !self.null{
@@ -84,6 +100,10 @@ impl TOML {
             }
         }
         return Option::None;
+    }
+
+    pub fn get_objects(self) -> Vec<TOML> {
+        return self.objects.clone();
     }
 
     pub fn is_null(self) -> bool {
@@ -151,9 +171,7 @@ fn parse_value(tok: String) -> TOMLValue {
             }else if chr.is_digit(10) {
                 value_type = 2;
 
-                let mut utf8str: Vec<u8> = Vec::new();
-                utf8str.push(chr as u8);
-                cur_tok += &String::from_utf8(utf8str).unwrap();
+                cur_tok += &chr.to_string();
             }else if chr == '[' {
                 value_type = 3;
             }
@@ -161,27 +179,21 @@ fn parse_value(tok: String) -> TOMLValue {
             if chr == '"' {
                 unsafe{
                     if *pchr == '\\' {
-                        let mut utf8str: Vec<u8> = Vec::new();
-                        utf8str.push(chr as u8);
-                        cur_tok += &String::from_utf8(utf8str).unwrap();
+                        cur_tok += &chr.to_string();
                     }else{
-                        toml_value = TOMLValue::get_string(cur_tok.clone());
+                        toml_value = TOMLValue::get_new_string(cur_tok.clone());
                         cur_tok = String::new();
                     }
                 }
 
             }else{
-                let mut utf8str: Vec<u8> = Vec::new();
-                utf8str.push(chr as u8);
-                cur_tok += &String::from_utf8(utf8str).unwrap();
+                cur_tok += &chr.to_string();
 
             }
         }else if value_type == 2 {
 
             if chr.is_digit(10) || chr == '.' {
-                let mut utf8str: Vec<u8> = Vec::new();
-                utf8str.push(chr as u8);
-                cur_tok += &String::from_utf8(utf8str).unwrap();
+                cur_tok += &chr.to_string();
 
             }
         }else if value_type == 3 {
@@ -193,11 +205,9 @@ fn parse_value(tok: String) -> TOMLValue {
                     cur_arr.push(parse_value(cur_tok.clone()));
                 }
                 cur_tok = String::new();
-                toml_value = TOMLValue::get_array(cur_arr.clone());
+                toml_value = TOMLValue::get_new_array(cur_arr.clone());
             } else {
-                let mut utf8str: Vec<u8> = Vec::new();
-                utf8str.push(chr as u8);
-                cur_tok += &String::from_utf8(utf8str).unwrap();
+                cur_tok += &chr.to_string();
             }
         }
 
@@ -206,7 +216,7 @@ fn parse_value(tok: String) -> TOMLValue {
     }
     if value_type == 2 {
         let n:f64 = f64::from_str(&cur_tok).unwrap();
-        toml_value = TOMLValue::get_number(n);
+        toml_value = TOMLValue::get_new_number(n);
     }
     if toml_value.empty {
         panic!("TOML parsing error, value expected, nothing found\nstring that created the panic: {:?}\n", tok);
@@ -226,8 +236,7 @@ pub fn parse(toml: String) -> TOML{
     3 -> Properties
     */
     for line in toml_str.split("\n") {
-
-
+        print!("({}) <{}> ", parse_stage, line);
         let mut line_string:String = String::from(line);
         let line_chars:&[u8] = line_string.as_bytes();
         let mut cur_tok:String = String::new();
@@ -252,9 +261,7 @@ pub fn parse(toml: String) -> TOML{
                     parse_stage = 1;
                 } else if chr.is_alphabetic() {
                     parse_stage = 3;
-                    let mut utf8str: Vec<u8> = Vec::new();
-                    utf8str.push(chr as u8);
-                    cur_tok += &String::from_utf8(utf8str).unwrap();
+                    cur_tok += &chr.to_string();
                 }
             }else if parse_stage == 1 {
                 if chr == ']' {
@@ -263,47 +270,33 @@ pub fn parse(toml: String) -> TOML{
                     cur_tok = String::new();
                     parse_stage = 2;
                 }else{
-                    let mut utf8str: Vec<u8> = Vec::new();
-                    utf8str.push(chr as u8);
-                    cur_tok += &String::from_utf8(utf8str).unwrap();
+                    cur_tok += &chr.to_string();
                 }
             }else if parse_stage == 2 {
                 if properties_stage == 0 && chr.is_alphabetic() && chr != ' ' {
                     properties_stage = 1;
-                    let mut utf8str: Vec<u8> = Vec::new();
-                    utf8str.push(chr as u8);
-                    cur_tok += &String::from_utf8(utf8str).unwrap();
+                    cur_tok += &chr.to_string();
                 }else if properties_stage == 1 && chr == '=' {
                     cur_p_name = cur_tok.clone();
                     cur_tok = String::new();
                     properties_stage = 2;
                 }else if properties_stage == 1 && chr.is_alphabetic() && chr != ' ' {
-                    let mut utf8str: Vec<u8> = Vec::new();
-                    utf8str.push(chr as u8);
-                    cur_tok += &String::from_utf8(utf8str).unwrap();
+                    cur_tok += &chr.to_string();
                 }else if properties_stage == 2 {
-                    let mut utf8str: Vec<u8> = Vec::new();
-                    utf8str.push(chr as u8);
-                    cur_tok += &String::from_utf8(utf8str).unwrap();
+                    cur_tok += &chr.to_string();
                 }
             } else if parse_stage == 3 {
                 if properties_stage == 0 && chr.is_alphabetic() && chr != ' ' {
                     properties_stage = 1;
-                    let mut utf8str: Vec<u8> = Vec::new();
-                    utf8str.push(chr as u8);
-                    cur_tok += &String::from_utf8(utf8str).unwrap();
+                    cur_tok += &chr.to_string();
                 }else if properties_stage == 1 && chr == '=' {
                     cur_p_name = cur_tok.clone();
                     cur_tok = String::new();
                     properties_stage = 2;
                 }else if properties_stage == 1 && chr.is_alphabetic() && chr != ' ' {
-                    let mut utf8str: Vec<u8> = Vec::new();
-                    utf8str.push(chr as u8);
-                    cur_tok += &String::from_utf8(utf8str).unwrap();
+                    cur_tok += &chr.to_string();
                 }else if properties_stage == 2 {
-                    let mut utf8str: Vec<u8> = Vec::new();
-                    utf8str.push(chr as u8);
-                    cur_tok += &String::from_utf8(utf8str).unwrap();
+                    cur_tok += &chr.to_string();
                 }
             }
         }
@@ -317,6 +310,7 @@ pub fn parse(toml: String) -> TOML{
             cur_toml.properties.push((cur_p_name, parse_value(cur_tok)));
             parse_stage = 0;
         }
+        println!("({})", parse_stage);
     }
     if parse_stage == 2 {
 

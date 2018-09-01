@@ -1,0 +1,13 @@
+
+
+[rust]
+content  = []
+makefile = "ports/rust.makefile"
+
+[arduino-cli-0.2.0-alpha.preveiew]
+content  = ["http://downloads.arduino.cc/arduino-cli/arduino-cli-0.2.0-alpha.preview-linux64.tar.bz2", "http://downloads.arduino.cc/arduino-cli/arduino-cli-0.2.0-alpha.preview-linux32.tar.bz2", "http://downloads.arduino.cc/arduino-cli/arduino-cli-0.2.0-alpha.preview-linuxarm.tar.bz2", "http://downloads.arduino.cc/arduino-cli/arduino-cli-0.2.0-alpha.preview-windows.zip", "http://downloads.arduino.cc/arduino-cli/arduino-cli-0.2.0-alpha.preview-osx.zip"]
+makefile = "ports/arduino-cli.makefile"
+
+[bash-it]
+content  = []
+makefile = "ports/arduino-cli.makefile"

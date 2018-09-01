@@ -30,7 +30,6 @@ fn main() {
         println!("USAGE: pinst command [options]\n\n");
         println!("To see the list of available commands use 'pinst help'");
     }
-    io::overwrite("test.txt".to_string(), "".to_string())
 }
 
 fn help(args: Vec<String>){
@@ -41,17 +40,27 @@ fn help(args: Vec<String>){
 }
 
 fn port(args: Vec<String>){
-    println!("PORT PAGE");
+    //println!("PORT PAGE");
     if args.clone().len() > 0 {
-        println!("{:?}", args.clone());
+        //println!("{:?}", args.clone());
         let command:String = String::from(args.clone()[0].as_ref());
         match command.as_ref(){
-            "list" => parse_test(),
+            "list" => port_list(),
             _ => println!("Not a valid command"),
         }
     }
 }
 
-fn parse_test() {
-    println!("{}", toml::parse_file("ports.toml".to_string()).to_string());
+fn port_list() {
+    let ports_toml = toml::parse_file("ports.toml".to_string());
+    let file_ports = ports_toml.get_property("files".to_string()).expect("Ports file error")
+                                                     .get_array().expect("Port array error");
+    for port in file_ports {
+        let port_path = port.get_string().expect("Port path error");
+        println!("File: {}", port_path);
+        let port_toml = toml::parse_file(port_path);
+        for ship in port_toml.get_objects(){
+            println!("Ship: {}", ship.name);
+        }
+    }
 }

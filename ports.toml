@@ -1,4 +1,4 @@
 github = ["theperkinrex/pinst_port"]
-gitlab = []
+gitlab = ["ThePerkinrex/pinst_port_test"]
 other  = []
 files  = []

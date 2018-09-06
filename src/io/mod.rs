@@ -1,7 +1,9 @@
 #![allow(dead_code)]
 
 use std::fs;
+use std::fs::File;
 use std::io::Read;
+use std::io::Write;
 
 // File IO
 pub fn read(filename: String) -> String {
@@ -34,4 +36,17 @@ pub fn read_from_url(url: String) -> String{
     let mut content = String::new();
     resp.read_to_string(&mut content).expect("Response error");
     return content.clone();
+}
+
+pub fn download_file(url: String, path: String) {
+    let url_str:&str = url.as_ref();
+    let mut resp = reqwest::get(url_str).expect("URL use error");
+    assert!(resp.status().is_success());
+
+    let mut buffer = Vec::new();
+    resp.read_to_end(&mut buffer).expect("Response error");
+    let mut f = File::create(path).expect("File creation error");
+    f.write_all(&buffer).expect("Write error");
+    f.flush().expect("Flush error");
+    
 }

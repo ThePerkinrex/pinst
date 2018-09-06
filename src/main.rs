@@ -14,6 +14,7 @@ use std::env;
 mod io;
 mod toml;
 mod ports;
+mod ships;
 
 
 fn main() {
@@ -28,11 +29,13 @@ fn main() {
         match command {
             "help" => help(args),
             "port" => port(args),
+            "ship" => ship(args),
             _ => println!("Not a command"),
         }
     }else{
         println!("USAGE: pinst command [options]\n\n");
         println!("To see the list of available commands use 'pinst help'");
+
     }
 }
 
@@ -96,9 +99,72 @@ fn port_list() {
     for port in file_ports {
         let port_path = port.get_string().expect("Port path error");
         println!("{}", port_path);
-        /*let port_toml = toml::parse_file(port_path);
-        for ship in port_toml.get_objects(){
-            println!("Ship: {}", ship.name);
-        }*/
+    }
+}
+
+fn ship(args: Vec<String>){
+    if args.clone().len() > 0 {
+        //println!("{:?}", args.clone());
+        let command:String = String::from(args.clone()[0].as_ref());
+        match command.as_ref(){
+            "list" => ship_list(),
+            _ => println!("Not a valid command"),
+        }
+    }
+}
+
+fn ship_list() {
+    let ports_toml = toml::parse_file("ports.toml".to_string());
+
+    let github_ports = ports_toml.clone().get_property("github".to_string()).expect("Ports file error")
+                                                               .get_array().expect("Port array error");
+    if github_ports.len() > 0 {
+        println!("Github ports: ");
+    }
+    for port in github_ports {
+        let port_path = port.get_string().expect("Port path error");
+        println!(" - {}: ", port_path);
+        for ship in ports::get_available_ships(port_path, 0){
+            println!("   - {}", ship);
+        }
+    }
+
+    let gitlab_ports = ports_toml.clone().get_property("gitlab".to_string()).expect("Ports file error")
+                                                               .get_array().expect("Port array error");
+    if gitlab_ports.len() > 0 {
+        println!("Gitlab ports: ");
+    }
+    for port in gitlab_ports {
+        let port_path = port.get_string().expect("Port path error");
+        println!(" - {}: ", port_path);
+        for ship in ports::get_available_ships(port_path, 1){
+            println!("   - {}", ship);
+        }
+    }
+
+    let other_ports = ports_toml.clone().get_property("other".to_string()).expect("Ports file error")
+                                                               .get_array().expect("Port array error");
+    if other_ports.len() > 0 {
+        println!("Other ports: ");
+    }
+    for port in other_ports {
+        let port_path = port.get_string().expect("Port path error");
+        println!(" - {}: ", port_path);
+        for ship in ports::get_available_ships(port_path, 2){
+            println!("   - {}", ship);
+        }
+    }
+
+    let file_ports = ports_toml.clone().get_property("files".to_string()).expect("Ports file error")
+                                                            .get_array().expect("Port array error");
+    if file_ports.len() > 0 {
+        println!("File ports: ");
+    }
+    for port in file_ports {
+        let port_path = port.get_string().expect("Port path error");
+        println!(" - {}: ", port_path);
+        for ship in ports::get_available_ships(port_path, 3){
+            println!("   - {}", ship);
+        }
     }
 }

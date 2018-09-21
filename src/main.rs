@@ -9,6 +9,9 @@ const PINST_BRANCH :&str = "alpha"/*alpha, nightly or stable*/;
 
 extern crate reqwest;
 
+extern crate colored;
+
+
 use std::env;
 
 mod io;
@@ -30,6 +33,7 @@ fn main() {
             "help" => help(args),
             "port" => port(args),
             "ship" => ship(args),
+            "install" => install(args),
             _ => println!("Not a command"),
         }
     }else{
@@ -40,9 +44,14 @@ fn main() {
 }
 
 fn help(args: Vec<String>){
-    println!("HELP PAGE");
-    if args.len() > 0 {
-        println!("{:?}", args);
+    //println!("HELP PAGE");
+    if args.clone().len() > 0 {
+        println!("Help for {}", args[0]);
+    }else{
+        println!("pinst help [command]: prints this page");
+        println!("pinst port <command>: pinst port commands");
+        println!("pinst ship <command>: pinst ship commands");
+        println!("pinst install <ship_name>: install a ship named `ship_name`");
     }
 }
 
@@ -124,7 +133,7 @@ fn ship_list() {
     for port in github_ports {
         let port_path = port.get_string().expect("Port path error");
         println!(" - {}: ", port_path);
-        for ship in ports::get_available_ships(port_path, 0){
+        for ship in ports::get_available_ship_names(port_path, 0){
             println!("   - {}", ship);
         }
     }
@@ -137,7 +146,7 @@ fn ship_list() {
     for port in gitlab_ports {
         let port_path = port.get_string().expect("Port path error");
         println!(" - {}: ", port_path);
-        for ship in ports::get_available_ships(port_path, 1){
+        for ship in ports::get_available_ship_names(port_path, 1){
             println!("   - {}", ship);
         }
     }
@@ -150,7 +159,7 @@ fn ship_list() {
     for port in other_ports {
         let port_path = port.get_string().expect("Port path error");
         println!(" - {}: ", port_path);
-        for ship in ports::get_available_ships(port_path, 2){
+        for ship in ports::get_available_ship_names(port_path, 2){
             println!("   - {}", ship);
         }
     }
@@ -163,8 +172,16 @@ fn ship_list() {
     for port in file_ports {
         let port_path = port.get_string().expect("Port path error");
         println!(" - {}: ", port_path);
-        for ship in ports::get_available_ships(port_path, 3){
+        for ship in ports::get_available_ship_names(port_path, 3){
             println!("   - {}", ship);
         }
+    }
+}
+
+fn install(args: Vec<String>){
+    if args.clone().len() > 0 {
+        let term = &args[0];
+        let ship = ports::find_ship(term.to_string()).expect("Ship not found");
+        ship.install();
     }
 }

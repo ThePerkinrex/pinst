@@ -1,0 +1,45 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "cargo build",
+            "command": "cargo",
+            "args": [
+                "build"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "label": "run debug",
+            "osx": {
+                "command": "echo \"Enter command line arguments: \"; read cmdargs; cargo run $cmdargs",
+                "args": [
+                ],
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "panel": "dedicated",
+                "focus": true
+            }
+        },
+        {
+            "type": "shell",
+            "label": "run release",
+            "osx": {
+                "command": "echo \"Enter command line arguments: \"; read cmdargs; cargo run --release $cmdargs",
+                "args": [
+                    ""
+                ],
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "panel": "dedicated",
+                "focus": true
+            }
+        }
+    ]
+}

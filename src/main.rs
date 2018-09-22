@@ -18,7 +18,7 @@ mod io;
 mod toml;
 mod ports;
 mod ships;
-
+// TODO Add dependencies support
 
 fn main() {
     println!("Pinst {}-{}", PINST_VERSION, PINST_BRANCH);

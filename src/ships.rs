@@ -1,12 +1,14 @@
 //use std::fs;
 //use std::path::Path;
 use toml;
+use ports;
 use io;
 use colored::*;
 
 #[derive(Debug, Clone)]
 pub struct Ship {
     pub null: bool,
+    pub dependencies: Vec<String>,
     pub content: Vec<String>,
     pub makefile: String,
     pub makefile_url: String,
@@ -58,7 +60,12 @@ impl Ship {
     }
 
     pub fn install(self) {
-        println!("Starting downloads");
+        println!("{}", "Installing dependecies".yellow().bold());
+        for dependency in self.clone().dependencies {
+            let dship = ports::find_ship(dependency).expect(&"Dependecy information is wrong".red());
+            dship.install();
+        }
+        println!("Starting downloads for {}", self.name.green().bold());
         self.clone().download_default().expect("A download error occured");
         println!("Installing {}", self.name.green().bold());
         io::run_command("make -f ~/.pinst/".to_string() + &self.makefile + " install", false);
@@ -72,7 +79,7 @@ impl Ship {
 #[allow(dead_code)]
 impl Ship {
     pub fn null() -> Ship {
-        return Ship {null: true, content: Vec::new(), makefile: String::new(), makefile_url: String::new(), download_type: 0, port_name: String::new(), name: String::new()};
+        return Ship {null: true, dependencies: Vec::new(), content: Vec::new(), makefile: String::new(), makefile_url: String::new(), download_type: 0, port_name: String::new(), name: String::new()};
     }
 
     pub fn new_from_toml(ship: toml::TOML, port_type: u8, port_name: String) -> Ship{
@@ -81,6 +88,11 @@ impl Ship {
         let mut ship_content: Vec<String> = Vec::new();
         for toml_value in ship_content_TOMLValue {
             ship_content.push(toml_value.get_string().expect("String expected"));
+        }
+        let ship_dependencies_TOMLValue = ship.clone().get_property(String::from("dependencies")).expect("dependencies property not found").get_array().expect("Expected dependencies to be an array");
+        let mut ship_dependencies: Vec<String> = Vec::new();
+        for toml_value in ship_dependencies_TOMLValue {
+            ship_dependencies.push(toml_value.get_string().expect("String expected"));
         }
         let ship_makefile: String;
         let makefile_toml:toml::TOMLValue = ship.clone().get_property(String::from("makefile")).expect("Makefile property not found");
@@ -96,7 +108,7 @@ impl Ship {
             let split_url: Vec<&str> = url_tmp.split('/').collect();
             ship_makefile = split_url[split_url.len()-1].clone().to_string();
         }
-        let result: Ship = Ship {content: ship_content, makefile_url: ship_makefile_url, makefile: ship_makefile, null: false, download_type: port_type, port_name: port_name, name: ship.name};
+        let result: Ship = Ship {dependencies: ship_dependencies, content: ship_content, makefile_url: ship_makefile_url, makefile: ship_makefile, null: false, download_type: port_type, port_name: port_name, name: ship.name};
         return result.clone();
     }
 

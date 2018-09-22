@@ -1,4 +1,4 @@
-const PINST_VERSION:&str = "0.1.0"/*big.small.patch*/;
+const PINST_VERSION:&str = "0.2.0"/*big.small.patch*/;
 const PINST_BRANCH :&str = "alpha"/*alpha, nightly or stable*/;
 
 /*

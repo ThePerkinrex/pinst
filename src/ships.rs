@@ -11,6 +11,7 @@ pub struct Ship {
     pub dependencies: Vec<String>,
     pub content: Vec<String>,
     pub makefile: String,
+    pub version: String,
     pub makefile_url: String,
     pub download_type: u8,
     pub port_name: String,
@@ -60,18 +61,23 @@ impl Ship {
     }
 
     pub fn install(self) {
-        println!("{}", "Installing dependecies".yellow().bold());
+        if self.clone().dependencies.len() > 0 {
+            println!("{}", "Installing dependecies".yellow().bold());
+        }
         for dependency in self.clone().dependencies {
             let dship = ports::find_ship(dependency).expect(&"Dependecy information is wrong".red());
             dship.install();
         }
-        println!("Starting downloads for {}", self.name.green().bold());
+        println!("Starting downloads for {} {}", self.name.green().bold(), self.version.green().bold());
         self.clone().download_default().expect("A download error occured");
-        println!("Installing {}", self.name.green().bold());
+        println!("Installing {} {}", self.name.green().bold(), self.version.green().bold());
         io::run_command("make -f ~/.pinst/".to_string() + &self.makefile + " install", false);
         println!("Cleaning up makefile");
         io::run_command("rm ~/.pinst/".to_string() + &self.makefile, false);
-        println!("\n{} installed!", self.name.green().bold());
+        println!("Adding it to the ships.toml file");
+        io::write("~/.pinst/ships.toml".to_string(), "[".to_string() + &self.name + "]\n");
+        io::write("~/.pinst/ships.toml".to_string(), "version = \"".to_string() + &self.version + "\"\n\n");
+        println!("\n{} {} installed!", self.name.green().bold(), self.version.green().bold());
     }
 }
 
@@ -79,7 +85,7 @@ impl Ship {
 #[allow(dead_code)]
 impl Ship {
     pub fn null() -> Ship {
-        return Ship {null: true, dependencies: Vec::new(), content: Vec::new(), makefile: String::new(), makefile_url: String::new(), download_type: 0, port_name: String::new(), name: String::new()};
+        return Ship {null: true, dependencies: Vec::new(), content: Vec::new(), makefile: String::new(), version: String::new(), makefile_url: String::new(), download_type: 0, port_name: String::new(), name: String::new()};
     }
 
     pub fn new_from_toml(ship: toml::TOML, port_type: u8, port_name: String) -> Ship{
@@ -89,6 +95,7 @@ impl Ship {
         for toml_value in ship_content_TOMLValue {
             ship_content.push(toml_value.get_string().expect("String expected"));
         }
+        #[allow(non_snake_case)]
         let ship_dependencies_TOMLValue = ship.clone().get_property(String::from("dependencies")).expect("dependencies property not found").get_array().expect("Expected dependencies to be an array");
         let mut ship_dependencies: Vec<String> = Vec::new();
         for toml_value in ship_dependencies_TOMLValue {
@@ -108,7 +115,8 @@ impl Ship {
             let split_url: Vec<&str> = url_tmp.split('/').collect();
             ship_makefile = split_url[split_url.len()-1].clone().to_string();
         }
-        let result: Ship = Ship {dependencies: ship_dependencies, content: ship_content, makefile_url: ship_makefile_url, makefile: ship_makefile, null: false, download_type: port_type, port_name: port_name, name: ship.name};
+        let version:String = ship.clone().get_property(String::from("version")).expect("Version property not found").get_string().expect("String expected for version");
+        let result: Ship = Ship {dependencies: ship_dependencies, content: ship_content, version: version, makefile_url: ship_makefile_url, makefile: ship_makefile, null: false, download_type: port_type, port_name: port_name, name: ship.name};
         return result.clone();
     }
 
@@ -139,4 +147,28 @@ impl Ship {
 
         return Ship::new_from_toml(result.get_object(ship_name.clone()).expect("Ship TOML error"), port_type, port_name);
     }
+}
+
+pub fn get_installed_ships() -> Vec<String>{
+    let ships_toml = toml::parse_file("~/.pinst/ships.toml".to_string());
+    let mut r:Vec<String> = Vec::new();
+    for ship in ships_toml.get_objects() {
+        r.push(ship.name);
+    }
+    return r;
+}
+
+
+
+pub fn is_ship_updatable(name: String) -> bool {
+    let ship = ports::find_ship(name.clone()).expect("Ship not available");
+    let ships_toml = toml::parse_file("~/.pinst/ships.toml".to_string());
+    let mut version = ship.version.clone();
+    for ship in ships_toml.get_objects() {
+        if ship.name == name {
+            version = ship.get_property("version".to_string()).expect("Version expected").get_string().expect("Version expected to be an string");
+        }
+    }
+    //println!("{} != {}", &ship.version, &version);
+    return ship.version != version;
 }

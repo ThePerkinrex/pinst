@@ -511,7 +511,7 @@ dependencies = [
 
 [[package]]
 name = "pinst"
-version = "0.1.0"
+version = "0.2.0-alpha"
 dependencies = [
  "colored 1.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "reqwest 0.8.8 (registry+https://github.com/rust-lang/crates.io-index)",

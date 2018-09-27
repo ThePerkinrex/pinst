@@ -71,6 +71,12 @@ impl Ship {
         println!("Starting downloads for {} {}", self.name.green().bold(), self.version.green().bold());
         self.clone().download_default().expect("A download error occured");
         println!("Installing {} {}", self.name.green().bold(), self.version.green().bold());
+        if self.name.clone() == "pinst" {
+            if cfg!(target_os = "windows") {
+                io::run_command("7z.exe x pinst-".to_string()+&self.version.replace("v", "")+".zip", false);
+                io::run_command("cd pinst-".to_string()+&self.version.replace("v", "")+";cargo build --release;move target/release/pinst ../;cd ..;del /q /f pinst-".to_string()+&self.version.replace("v", ""), false);
+            }
+        }
         io::run_command("make -f ~/.pinst/".to_string() + &self.makefile + " install", false);
         println!("Cleaning up makefile");
         io::run_command("rm ~/.pinst/".to_string() + &self.makefile, false);

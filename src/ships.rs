@@ -65,17 +65,18 @@ impl Ship {
             println!("{}", "Installing dependecies".yellow().bold());
         }
         for dependency in self.clone().dependencies {
+            
             let dship = ports::find_ship(dependency).expect(&"Dependecy information is wrong".red());
-            dship.install();
+            if &dship.version != "installer"{
+                dship.install();
+            }
+            
         }
         println!("Starting downloads for {} {}", self.name.green().bold(), self.version.green().bold());
         self.clone().download_default().expect("A download error occured");
         println!("Installing {} {}", self.name.green().bold(), self.version.green().bold());
         if self.name.clone() == "pinst" {
-            if cfg!(target_os = "windows") {
-                io::run_command("7z.exe x pinst-".to_string()+&self.version.replace("v", "")+".zip", false);
-                io::run_command("cd pinst-".to_string()+&self.version.replace("v", "")+";cargo build --release;move target/release/pinst ../;cd ..;del /q /f pinst-".to_string()+&self.version.replace("v", ""), false);
-            }
+            println!("Installing/Updating pinst hasn't been implemented, it will be implemented in v0.4.0-alpha");
         }
         io::run_command("make -f ~/.pinst/".to_string() + &self.makefile + " install", false);
         println!("Cleaning up makefile");
@@ -177,4 +178,9 @@ pub fn is_ship_updatable(name: String) -> bool {
     }
     //println!("{} != {}", &ship.version, &version);
     return ship.version != version;
+}
+
+pub fn is_ship_installer(name: String) -> bool {
+    let ship = ports::find_ship(name.clone()).expect("Ship not available");
+    return &ship.version == "installer";
 }

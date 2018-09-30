@@ -1,4 +1,4 @@
-const PINST_VERSION:&str = "0.2.0"/*big.small.patch*/;
+const PINST_VERSION:&str = "0.3.0"/*big.small.patch*/;
 const PINST_BRANCH :&str = "alpha"/*alpha, nightly or stable*/;
 
 /*
@@ -19,10 +19,11 @@ mod toml;
 mod ports;
 mod ships;
 
+
 use colored::Colorize;
 
 fn main() {
-    println!("Pinst {}-{}", PINST_VERSION, PINST_BRANCH);
+    println!("Pinst {}-{} {}", PINST_VERSION, PINST_BRANCH, env!("TARGET"));
     if !io::path_exists("~/.pinst".to_string()) {
         println!("{}", "Setting up pinst".yellow().bold());
         setup();
@@ -61,7 +62,18 @@ fn setup(){
     // Creating the installed ships file
     io::create_empty_file("~/.pinst/ships.toml".to_string());
     io::overwrite("~/.pinst/ships.toml".to_string(), "[pinst]\n".to_string());
-    io::write("~/.pinst/ships.toml".to_string(), "version = \"".to_string() + PINST_VERSION + "-" + PINST_BRANCH + "\"\n\n");
+    io::write("~/.pinst/ships.toml".to_string(), "version = \"v".to_string() + PINST_VERSION + "-" + PINST_BRANCH + "\"\n\n");
+
+    // Creating the ports.toml
+    io::create_empty_file("~/.pinst/ports.toml".to_string());
+    let mut gh:Vec<toml::TOMLValue> = Vec::new();
+    gh.push(toml::TOMLValue::get_new_string("theperkinrex/pinst_port".to_string()));
+    let mut ports_toml: toml::TOML = toml::TOML::new_w_explicit_name("TOML");
+    ports_toml = ports_toml.add_property("github".to_string(), toml::TOMLValue::get_new_array(gh));
+    ports_toml = ports_toml.add_property("gitlab".to_string(), toml::TOMLValue::get_new_array(Vec::new()));
+    ports_toml = ports_toml.add_property("other".to_string(), toml::TOMLValue::get_new_array(Vec::new()));
+    ports_toml = ports_toml.add_property("files".to_string(), toml::TOMLValue::get_new_array(Vec::new()));
+    io::overwrite("~/.pinst/ports.toml".to_string(), ports_toml.to_string());
 }
 
 fn help(args: Vec<String>){
@@ -78,20 +90,140 @@ fn help(args: Vec<String>){
     }
 }
 
-fn port(args: Vec<String>){
+fn port(mut args: Vec<String>){
     //println!("PORT PAGE");
     if args.clone().len() > 0 {
-        //println!("{:?}", args.clone());
         let command:String = String::from(args.clone()[0].as_ref());
+        args.remove(0);
         match command.as_ref(){
             "list" => port_list(),
+            "add" => port_add(args),
+            "remove" => port_remove(args),
             _ => println!("Not a valid command"),
         }
     }
 }
 
+fn port_add(args: Vec<String>) {
+    if args.clone().len() > 1 {
+        let command = &args[0];
+        match command.as_ref(){
+            "github" => port_add_type(0, &args[1]),
+            "gitlab" => port_add_type(1, &args[1]),
+            "other" => port_add_type(2, &args[1]),
+            "file" => port_add_type(3, &args[1]),
+            _ => println!("Not a valid type"),
+        }
+    }
+}
+
+fn port_add_type(t: u8, path: &str) {
+    let ports_toml:toml::TOML = toml::parse_file("~/.pinst/ports.toml".to_string());
+    let mut gh_p:Vec<toml::TOMLValue> = ports_toml.clone().get_property("github".to_string()).expect("ports.toml is wrong").get_array().expect("Vec expected");
+    let mut gl_p:Vec<toml::TOMLValue> = ports_toml.clone().get_property("gitlab".to_string()).expect("ports.toml is wrong").get_array().expect("Vec expected");
+    let mut other_p:Vec<toml::TOMLValue> = ports_toml.clone().get_property("other".to_string()).expect("ports.toml is wrong").get_array().expect("Vec expected");
+    let mut files_p:Vec<toml::TOMLValue> = ports_toml.clone().get_property("files".to_string()).expect("ports.toml is wrong").get_array().expect("Vec expected");
+    if t == 0 {
+        gh_p.push(toml::TOMLValue::get_new_string(path.to_string()));
+    }else if t == 1 {
+        gl_p.push(toml::TOMLValue::get_new_string(path.to_string()));
+    }else if t == 2 {
+        other_p.push(toml::TOMLValue::get_new_string(path.to_string()));
+    }else if t == 3 {
+        files_p.push(toml::TOMLValue::get_new_string(path.to_string()));
+    }
+    let mut new_toml:toml::TOML = toml::TOML::new_w_explicit_name("TOML");
+    new_toml = new_toml.add_property("github".to_string(), toml::TOMLValue::get_new_array(gh_p));
+    new_toml = new_toml.add_property("gitlab".to_string(), toml::TOMLValue::get_new_array(gl_p));
+    new_toml = new_toml.add_property("other".to_string(), toml::TOMLValue::get_new_array(other_p));
+    new_toml = new_toml.add_property("files".to_string(), toml::TOMLValue::get_new_array(files_p));
+    io::overwrite("~/.pinst/ports.toml".to_string(), new_toml.to_string());
+    println!("Port {} {}", path.green().bold(), "added!".green().bold());
+}
+
+fn port_remove(args: Vec<String>) {
+    if args.clone().len() > 1 {
+        let command = &args[0];
+        match command.as_ref(){
+            "github" => port_remove_type(0, &args[1]),
+            "gitlab" => port_remove_type(1, &args[1]),
+            "other" => port_remove_type(2, &args[1]),
+            "file" => port_remove_type(3, &args[1]),
+            _ => println!("Not a valid type"),
+        }
+    }
+}
+
+fn port_remove_type(t: u8, path: &str) {
+    let ports_toml:toml::TOML = toml::parse_file("~/.pinst/ports.toml".to_string());
+    let mut gh_p:Vec<toml::TOMLValue> = ports_toml.clone().get_property("github".to_string()).expect("ports.toml is wrong").get_array().expect("Vec expected");
+    let mut gl_p:Vec<toml::TOMLValue> = ports_toml.clone().get_property("gitlab".to_string()).expect("ports.toml is wrong").get_array().expect("Vec expected");
+    let mut other_p:Vec<toml::TOMLValue> = ports_toml.clone().get_property("other".to_string()).expect("ports.toml is wrong").get_array().expect("Vec expected");
+    let mut files_p:Vec<toml::TOMLValue> = ports_toml.clone().get_property("files".to_string()).expect("ports.toml is wrong").get_array().expect("Vec expected");
+    if t == 0 {
+        let mut initialized=false;
+        let mut i:usize = 0;
+        for port in gh_p.clone() {
+            if port == toml::TOMLValue::get_new_string(path.to_string()) {
+                initialized=true;
+                break;
+            }
+            i+=1;
+        }
+        if initialized {
+            gh_p.remove(i);
+        }
+    }else if t == 1 {
+        let mut initialized=false;
+        let mut i:usize = 0;
+        for port in gl_p.clone() {
+            if port == toml::TOMLValue::get_new_string(path.to_string()) {
+                initialized=true;
+                break;
+            }
+            i+=1;
+        }
+        if initialized {
+            gl_p.remove(i);
+        }
+    }else if t == 2 {
+        let mut initialized=false;
+        let mut i:usize = 0;
+        for port in other_p.clone() {
+            if port == toml::TOMLValue::get_new_string(path.to_string()) {
+                initialized=true;
+                break;
+            }
+            i+=1;
+        }
+        if initialized {
+            other_p.remove(i);
+        }
+    }else if t == 3 {
+        let mut initialized=false;
+        let mut i:usize = 0;
+        for port in files_p.clone() {
+            if port == toml::TOMLValue::get_new_string(path.to_string()) {
+                initialized=true;
+                break;
+            }
+            i+=1;
+        }
+        if initialized {
+            files_p.remove(i);
+        }
+    }
+    let mut new_toml:toml::TOML = toml::TOML::new_w_explicit_name("TOML");
+    new_toml = new_toml.add_property("github".to_string(), toml::TOMLValue::get_new_array(gh_p));
+    new_toml = new_toml.add_property("gitlab".to_string(), toml::TOMLValue::get_new_array(gl_p));
+    new_toml = new_toml.add_property("other".to_string(), toml::TOMLValue::get_new_array(other_p));
+    new_toml = new_toml.add_property("files".to_string(), toml::TOMLValue::get_new_array(files_p));
+    io::overwrite("~/.pinst/ports.toml".to_string(), new_toml.to_string());
+    println!("Port {} {}", path.red().bold(), "removed!".red().bold());
+}
+
 fn port_list() {
-    let ports_toml = toml::parse_file("ports.toml".to_string());
+    let ports_toml = toml::parse_file("~/.pinst/ports.toml".to_string());
 
     let github_ports = ports_toml.clone().get_property("github".to_string()).expect("Ports file error")
                                                                .get_array().expect("Port array error");
@@ -146,7 +278,7 @@ fn ship(args: Vec<String>){
 }
 
 fn ship_list() {
-    let ports_toml = toml::parse_file("ports.toml".to_string());
+    let ports_toml = toml::parse_file("~/.pinst/ports.toml".to_string());
     let installed_ships = ships::get_installed_ships();
 
     let github_ports = ports_toml.clone().get_property("github".to_string()).expect("Ports file error")
@@ -156,16 +288,22 @@ fn ship_list() {
     }
     for port in github_ports {
         let port_path = port.get_string().expect("Port path error");
-        println!(" - {}: ", port_path);
+        println!(" ▶︎ {}: ", port_path);
         for ship in ports::get_available_ship_names(port_path, 0){
             if installed_ships.contains(&ship) {
                 if ships::is_ship_updatable(ship.clone()) {
                     println!("   {} {}", "⤓".yellow(), ship);
+                } else if ships::is_ship_installer(ship.clone()){
+                    println!("   {} {}", "▼".green(), ship);
                 } else {
                     println!("   {} {}", "✓".green(), ship);
                 }
             }else{
-                println!("   - {}", ship);
+                if ships::is_ship_installer(ship.clone()){
+                    println!("   {} {}", "▼".cyan(), ship);
+                } else {
+                    println!("   - {}", ship);
+                }
             }
         }
     }
@@ -177,16 +315,22 @@ fn ship_list() {
     }
     for port in gitlab_ports {
         let port_path = port.get_string().expect("Port path error");
-        println!(" - {}: ", port_path);
+        println!(" ▶︎ {}: ", port_path);
         for ship in ports::get_available_ship_names(port_path, 1){
             if installed_ships.contains(&ship) {
                 if ships::is_ship_updatable(ship.clone()) {
                     println!("   {} {}", "⤓".yellow(), ship);
+                } else if ships::is_ship_installer(ship.clone()){
+                    println!("   {} {}", "▼".green(), ship);
                 } else {
                     println!("   {} {}", "✓".green(), ship);
                 }
             }else{
-                println!("   - {}", ship);
+                if ships::is_ship_installer(ship.clone()){
+                    println!("   {} {}", "▼".cyan(), ship);
+                } else {
+                    println!("   - {}", ship);
+                }
             }
         }
     }
@@ -198,16 +342,22 @@ fn ship_list() {
     }
     for port in other_ports {
         let port_path = port.get_string().expect("Port path error");
-        println!(" - {}: ", port_path);
+        println!(" ▶︎ {}: ", port_path);
         for ship in ports::get_available_ship_names(port_path, 2){
             if installed_ships.contains(&ship) {
                 if ships::is_ship_updatable(ship.clone()) {
                     println!("   {} {}", "⤓".yellow(), ship);
+                } else if ships::is_ship_installer(ship.clone()){
+                    println!("   {} {}", "▼".green(), ship);
                 } else {
                     println!("   {} {}", "✓".green(), ship);
                 }
             }else{
-                println!("   - {}", ship);
+                if ships::is_ship_installer(ship.clone()){
+                    println!("   {} {}", "▼".cyan(), ship);
+                } else {
+                    println!("   - {}", ship);
+                }
             }
         }
     }
@@ -219,16 +369,22 @@ fn ship_list() {
     }
     for port in file_ports {
         let port_path = port.get_string().expect("Port path error");
-        println!(" - {}: ", port_path);
+        println!(" ▶︎ {}: ", port_path);
         for ship in ports::get_available_ship_names(port_path, 3){
             if installed_ships.contains(&ship) {
                 if ships::is_ship_updatable(ship.clone()) {
                     println!("   {} {}", "⤓".yellow(), ship);
+                } else if ships::is_ship_installer(ship.clone()){
+                    println!("   {} {}", "▼".green(), ship);
                 } else {
                     println!("   {} {}", "✓".green(), ship);
                 }
             }else{
-                println!("   - {}", ship);
+                if ships::is_ship_installer(ship.clone()){
+                    println!("   {} {}", "▼".cyan(), ship);
+                } else {
+                    println!("   - {}", ship);
+                }
             }
         }
     }

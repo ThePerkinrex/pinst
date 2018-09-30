@@ -5,7 +5,7 @@ use std::str::FromStr;
 
 use io;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TOMLValue {
     pub array: Option<Vec<TOMLValue>>,
     pub string: Option<String>,
@@ -93,6 +93,11 @@ impl TOML {
         return self.properties.clone();
     }
 
+    pub fn add_property(mut self, name: String, value: TOMLValue) -> TOML{
+        self.properties.push((name, value));
+        return self.clone();
+    }
+
     pub fn get_object(self, name: String) -> Option<TOML>{
         for object in self.objects {
             if object.name == name && !self.null{
@@ -104,6 +109,11 @@ impl TOML {
 
     pub fn get_objects(self) -> Vec<TOML> {
         return self.objects.clone();
+    }
+
+    pub fn add_object(mut self, value: TOML) -> TOML{
+        self.objects.push(value);
+        return self.clone();
     }
 
     pub fn is_null(self) -> bool {

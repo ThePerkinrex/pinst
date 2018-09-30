@@ -91,7 +91,7 @@ pub fn get_available_ships(port_name:String, port_type:u8) -> Vec<Ship> {
 }
 
 pub fn find_ship(name: String) -> Option<Ship> {
-    let ports_toml = toml::parse_file("ports.toml".to_string());
+    let ports_toml = toml::parse_file("~/.pinst/ports.toml".to_string());
 
     let github_ports = ports_toml.clone().get_property("github".to_string()).expect("Ports file error")
                                                                .get_array().expect("Port array error");
